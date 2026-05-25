@@ -1,27 +1,42 @@
-const { consumer } = require('../config/kafka');
+const { paymentConsumer, producer } = require('../config/kafka');
+const stripe = require('../config/stripe');
 
 async function startPaymentConsumer() {
-  await consumer.connect();
-  console.log('Payment consumer connected with SASL_PLAINTEXT');
-  
-  await consumer.subscribe({ 
-    topic: 'payment-success', 
-    fromBeginning: false 
+  await paymentConsumer.connect();
+
+  await paymentConsumer.subscribe({
+    topic: 'order-created',
+    fromBeginning: false
   });
-  
-  await consumer.run({
+
+  await paymentConsumer.run({
     eachMessage: async ({ topic, partition, message }) => {
+        console.log(`
+      ------------------------
+      NEW KAFKA MESSAGE
+      Topic: ${topic}
+      Partition: ${partition}
+      Key: ${message.key.toString()}
+      Value: ${message.value.toString()}
+      ------------------------
+      `);
       const data = JSON.parse(message.value.toString());
       console.log(`Payment succeeded for order ${data.orderId}`);
       console.log(`   Partition: ${partition}`);
       
-      // Update order status in database
-      // Send email notification
-      // Trigger shipping process
-    },
+      const order = JSON.parse(message.value.toString());
+
+      console.log("Payment service received order:", order.id);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: order.total,
+        currency: 'inr',
+        metadata: { orderId: order.id }
+      });
+
+      console.log("Stripe payment intent created:", paymentIntent.id);
+    }
   });
-  
-  console.log('Payment consumer is running');
 }
 
 module.exports = startPaymentConsumer;

@@ -13,9 +13,11 @@ exports.createOrder = async (req, res) => {
   };
   
   orders.push(order);
+  console.log('order', order)
   
   // Send event to Kafka
   await producer.connect();
+  console.log(`Producing order-created event for ${order.id}`);
   await producer.send({
     topic: 'order-created',
     messages: [{
@@ -23,7 +25,7 @@ exports.createOrder = async (req, res) => {
       value: JSON.stringify(order)
     }]
   });
-  
+  console.log(`Event produced successfully`);
   res.json(order);
 };
 

@@ -9,7 +9,7 @@ export default function OrderConfirmation() {
   useEffect(() => {
     fetchOrder();
   }, []);
-
+  
   const fetchOrder = async () => {
     const res = await axios.get('http://localhost:4000/api/orders');
     const found = res.data.find(o => o.id == orderId);

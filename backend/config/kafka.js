@@ -3,46 +3,24 @@ const { Kafka } = require('kafkajs');
 const kafka = new Kafka({
   clientId: 'ecommerce',
   brokers: ['localhost:9092'],
-  connectionTimeout: 30000,
-  requestTimeout: 25000,
-   retry: {
-    initialRetryTime: 100,
-    retries: 5
-  }
 });
 
-const producer = kafka.producer({
-  allowAutoTopicCreation: true
-});
+const producer = kafka.producer();
+const orderConsumer = kafka.consumer({ groupId: 'order-group' });
+const paymentConsumer = kafka.consumer({ groupId: 'payment-group' });
 
-const consumer = kafka.consumer({ 
-  groupId: 'order-group',
-  sessionTimeout: 30000,
-  heartbeatInterval: 3000
-});
-
-const admin = kafka.admin();
-
-async function ensureTopics() {
-  await admin.connect();
-  
+async function ensureTopics(admin) {
   const topics = await admin.listTopics();
-  const requiredTopics = ['order-created', 'payment-success', 'payment-failed'];
-  
-  for (const topic of requiredTopics) {
+
+  const required = ['order-created', 'payment-success'];
+
+  for (let topic of required) {
     if (!topics.includes(topic)) {
       await admin.createTopics({
-        topics: [{
-          topic: topic,
-          numPartitions: 3,
-          replicationFactor: 1
-        }]
+        topics: [{ topic, numPartitions: 3, replicationFactor: 1 }]
       });
-      console.log(`Created topic: ${topic} with 3 partitions`);
     }
   }
-  
-  await admin.disconnect();
 }
 
-module.exports = { kafka, producer, consumer, ensureTopics };
+module.exports = { kafka, producer, orderConsumer, paymentConsumer, ensureTopics };

@@ -68,8 +68,8 @@ export default function Checkout() {
 }
 
 const containerStyle = {
-  maxWidth: 500,
-  margin: '50px auto',
+  maxWidth: 800,
+  margin: '20px auto',
   padding: 20
 };
 

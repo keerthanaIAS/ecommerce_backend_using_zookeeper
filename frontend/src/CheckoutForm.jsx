@@ -9,7 +9,7 @@ export default function CheckoutForm(){
    e.preventDefault();
 
    const {data}=await axios.post(
-   'http://localhost:4003/create-payment-intent',
+   'http://localhost:4000/create-payment-intent',
    {amount:1000}
    );
 

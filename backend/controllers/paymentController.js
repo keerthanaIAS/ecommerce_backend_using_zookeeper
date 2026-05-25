@@ -1,62 +1,60 @@
-const stripe = require('../config/stripe');
 const { producer } = require('../config/kafka');
-const orders = require('../data/orders');
+const stripe = require('../config/stripe');
 
 exports.createPaymentIntent = async (req, res) => {
   try {
+    const { amount, orderId } = req.body;
+
+    if (!amount || !orderId) {
+      return res.status(400).json({
+        error: "amount and orderId required"
+      });
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: req.body.amount,
+      amount: amount,
       currency: 'inr',
       metadata: {
-        orderId: req.body.orderId
+        orderId: String(orderId)
       }
     });
-    
-    res.json({ 
+
+    console.log("PaymentIntent created:", paymentIntent.id);
+
+    res.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id
     });
+
   } catch (error) {
+    console.error("PaymentIntent error:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
 
 exports.handleWebhook = async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
-  
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+  const event = JSON.parse(req.body.toString());
+
+  if (event.type === 'payment_intent.succeeded') {
+    const payment = event.data.object;
+
+    const orderId = payment.metadata.orderId;
+
+    console.log("Payment success:", orderId);
+
+    await producer.send({
+      topic: 'payment-success',
+      messages: [{
+        key: String(orderId),
+        value: JSON.stringify({
+          orderId,
+          paymentIntentId: payment.id
+        })
+      }]
+    });
+
+    console.log("Kafka payment-success sent");
   }
-  
-  // Handle the event
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object;
-      const orderId = paymentIntent.metadata.orderId;
-      
-      // Update order status
-      const order = orders.find(o => o.id == orderId);
-      if (order) {
-        order.paymentStatus = 'completed';
-        order.orderStatus = 'confirmed';
-        
-        // Send payment success event to Kafka
-        await producer.connect();
-        await producer.send({
-          topic: 'payment-success',
-          messages: [{
-            key: String(orderId),
-            value: JSON.stringify({ orderId, paymentIntentId: paymentIntent.id })
-          }]
-        });
-      }
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-  
+
   res.json({ received: true });
 };
