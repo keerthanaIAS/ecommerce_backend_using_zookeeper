@@ -1,0 +1,167 @@
+For Three broker URL connection:
+in kafka server.properties file need to create:
+Create 3 broker configs:
+config/server-0.properties
+config/server-1.properties
+config/server-2.properties
+
+## server-0.properties
+broker.id=0
+
+listeners=PLAINTEXT://:9092
+advertised.listeners=PLAINTEXT://localhost:9092
+
+log.dirs=/tmp/kafka-logs-0
+
+zookeeper.connect=localhost:2181
+
+num.partitions=3
+
+offsets.topic.replication.factor=3
+transaction.state.log.replication.factor=3
+transaction.state.log.min.isr=2
+
+default.replication.factor=3
+min.insync.replicas=2
+
+auto.create.topics.enable=true
+
+## server-1.properties
+broker.id=1
+
+listeners=PLAINTEXT://:9093
+advertised.listeners=PLAINTEXT://localhost:9093
+
+log.dirs=/tmp/kafka-logs-1
+
+zookeeper.connect=localhost:2181
+
+num.partitions=3
+
+offsets.topic.replication.factor=3
+transaction.state.log.replication.factor=3
+transaction.state.log.min.isr=2
+
+default.replication.factor=3
+min.insync.replicas=2
+
+auto.create.topics.enable=true
+
+## server-2.properties
+broker.id=2
+
+listeners=PLAINTEXT://:9094
+advertised.listeners=PLAINTEXT://localhost:9094
+
+log.dirs=/tmp/kafka-logs-2
+
+zookeeper.connect=localhost:2181
+
+num.partitions=3
+
+offsets.topic.replication.factor=3
+transaction.state.log.replication.factor=3
+transaction.state.log.min.isr=2
+
+default.replication.factor=3
+min.insync.replicas=2
+
+auto.create.topics.enable=true
+Start Order
+1. Start ZooKeeper
+bin/zookeeper-server-start.sh config/zookeeper.properties
+2. Start broker 0
+bin/kafka-server-start.sh config/server-0.properties
+3. Start broker 1
+bin/kafka-server-start.sh config/server-1.properties
+4. Start broker 2
+bin/kafka-server-start.sh config/server-2.properties
+Verify Brokers:
+Run:
+bin/zookeeper-shell.sh localhost:2181
+Then:
+ls /brokers/ids
+Expected:
+[0, 1, 2]
+
+
+## Zookeeper terminal log:
+keerthana@192 kafka_2.13-3.9.2 % bin/zookeeper-shell.sh localhost:2181
+Connecting to localhost:2181
+Welcome to ZooKeeper!
+JLine support is disabled
+WATCHER::
+WatchedEvent state:SyncConnected type:None path:null
+ls /                                
+[admin, brokers, cluster, config, consumers, controller, controller_epoch, feature, isr_change_notification, latest_producer_id_block, log_dir_event_notification, zookeeper]
+ls /brokers/ids
+[0, 1, 2]
+
+
+## Verify brokers first
+Run:
+bin/zookeeper-shell.sh localhost:2181
+Then:
+ls /brokers/ids
+You should see:
+[0,1,2]
+
+Create with RF=3
+bin/kafka-topics.sh \
+--create \
+--topic order-created \
+--partitions 3 \
+--replication-factor 3 \
+--bootstrap-server localhost:9092
+Then describe again
+bin/kafka-topics.sh \
+--describe \
+--topic order-created \
+--bootstrap-server localhost:9092
+NOW you should see something like:
+Partition: 0
+Leader: 0
+Replicas: 0,1,2
+Isr: 0,1,2
+or distributed leaders:
+Partition: 0 Leader: 0 Replicas: 0,1,2
+Partition: 1 Leader: 1 Replicas: 1,2,0
+Partition: 2 Leader: 2 Replicas: 2,0,1
+THAT is real replication.
+
+
+## if like this in kafka terminal after created 3 folders in server properties:
+keerthana@Keerthanas-MacBook-Air kafka_2.12-3.9.1 % bin/kafka-topics.sh \
+--describe \
+--topic order-created \
+--bootstrap-server localhost:9092
+Topic: order-created	TopicId: gib5GbiRTyuLqmqld5r9dg	PartitionCount: 1	ReplicationFactor: 1	Configs: min.insync.replicas=2
+	Topic: order-created	Partition: 0	Leader: 0	Replicas: 0	Isr: 0	Elr: N/A	LastKnownElr: N/A
+
+DELETE old topic:
+bin/kafka-topics.sh \
+--delete \
+--topic order-created \
+--bootstrap-server localhost:9092
+Recreate with RF=3
+bin/kafka-topics.sh \
+--create \
+--topic order-created \
+--partitions 3 \
+--replication-factor 3 \
+--bootstrap-server localhost:9092
+Then describe again
+bin/kafka-topics.sh \
+--describe \
+--topic order-created \
+--bootstrap-server localhost:9092
+NOW you should see something like:
+Partition: 0
+Leader: 0
+Replicas: 0,1,2
+Isr: 0,1,2
+or distributed leaders:
+Partition: 0 Leader: 0 Replicas: 0,1,2
+Partition: 1 Leader: 1 Replicas: 1,2,0
+Partition: 2 Leader: 2 Replicas: 2,0,1
+THAT is real replication.

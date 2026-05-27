@@ -9,6 +9,7 @@ const startOrderConsumer = require('./services/orderConsumer');
 const startPaymentConsumer = require('./services/paymentConsumer');
 
 const orderRoutes = require('./routes/orderRoutes');
+const productRoutes = require('./routes/productRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/orders', orderRoutes);
+app.use('/api/products', productRoutes);
 app.use('/api/payments', paymentRoutes);
 
 async function start() {

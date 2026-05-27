@@ -21,7 +21,7 @@ async function startPaymentConsumer() {
       ------------------------
       `);
       const data = JSON.parse(message.value.toString());
-      console.log(`Payment succeeded for order ${data.orderId}`);
+      console.log(`Payment succeeded for order ${JSON.stringify(data)}`);
       console.log(`   Partition: ${partition}`);
       
       const order = JSON.parse(message.value.toString());
