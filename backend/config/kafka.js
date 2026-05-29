@@ -2,18 +2,18 @@ const { Kafka } = require('kafkajs');
 
 const kafka = new Kafka({
   clientId: 'ecommerce',
-   brokers: [
-    "localhost:9092",
-    "localhost:9093",
-    "localhost:9094"
-  ]
-  // brokers: ['localhost:9092'], 
-  // sasl: {
-  //   mechanism: "plain",
-  //   username: "app",
-  //   password: "app-pass"
-  // },
-  // ssl: false
+  //  brokers: [
+  //   "localhost:9092",
+  //   "localhost:9093",
+  //   "localhost:9094"
+  // ]
+  brokers: ['10.55.66.132:9092'],  // ip wise check
+  sasl: {
+    mechanism: "plain",
+    username: "app",
+    password: "app-pass"
+  },
+  ssl: false
 });
 
 const producer = kafka.producer();

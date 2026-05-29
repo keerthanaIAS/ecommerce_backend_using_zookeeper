@@ -2,18 +2,18 @@ const { Kafka } = require('kafkajs');
 
 const kafka = new Kafka({
   clientId: 'health-check',
-   brokers: [
-    "localhost:9092",
-    "localhost:9093",
-    "localhost:9094"
-  ]
-  // brokers: ['localhost:9092'], 
-  // sasl: {
-  //   mechanism: "plain",
-  //   username: "app",
-  //   password: "app-pass"
-  // },
-  // ssl: false // ssl: false means: connection is NOT encrypted, Your Kafka client talks to broker in plain text. Like normal HTTP instead of HTTPS.
+  //  brokers: [
+  //   "localhost:9092",
+  //   "localhost:9093",
+  //   "localhost:9094"
+  // ]
+  brokers: ['10.55.66.132:9092'],  // ip wise check
+  sasl: {
+    mechanism: "plain",
+    username: "app",
+    password: "app-pass"
+  },
+  ssl: false // ssl: false means: connection is NOT encrypted, Your Kafka client talks to broker in plain text. Like normal HTTP instead of HTTPS.
 });
 
 async function checkKafka() {
